@@ -1,0 +1,275 @@
+#define tiempo_conteo  200
+#define tiempo_refresco  1
+#define tiempo  99999999
+
+//Variables Globales 
+int U=0;
+int D=0;
+const char seg [12] = {0xFC, 0x60, 0xDA, 0xF2, 0x66, 0xB6, 0xBE, 0XE0, 0xFE, 0xF6, 0xFC, 0x00};
+// Pines 
+BusOut Disp (D9,D8,D7,D6,D5,D4,D3,D2); // Dp abcdefg
+DigitalOut led(LED1);
+DigitalOut led2(A2);
+DigitalOut TU(D15);
+DigitalOut TD(D14);
+DigitalIn bt1(D10);
+DigitalIn bt2(D11);
+DigitalIn bt3(PC_13);
+DigitalIn bt4(A0);
+DigitalIn bt5(PC_9);
+DigitalIn bt6(A1);
+DigitalIn dip1(PC_0);
+DigitalIn dip2(PC_1);
+DigitalIn dip3(PC_2);
+DigitalIn dip4(PC_3);
+DigitalIn dip5(PC_12);
+DigitalIn dip6(PC_10);
+DigitalIn dip7(PC_11);
+
+int boton1, boton2, boton3, boton4, s;
+int a = 0, b = 0, c = 0, d = 0, e = 0, f = 0, g = 0, h = 0, k = 0, m = 0;
+static int unidades = 0, pa = 0;
+int titi = 0;
+
+// Prototipos de las funciones 
+void visualiza(void);
+void cuenta(void);
+void apuesta(void);
+
+// Hilos 
+Thread Hilo_visualizar;
+Thread Hilo_contar;
+Thread Hilo_dado;
+
+int main()
+{
+    Hilo_visualizar.start(visualiza);
+    Hilo_contar.start(cuenta);
+    Hilo_dado.start(apuesta);
+    led = 0;
+   while (true) {
+        led  = !led; // toogle
+        thread_sleep_for(tiempo_conteo);
+    }
+}
+
+void visualiza(void)
+{
+    char estado;
+    while(true)
+    {
+    switch  (estado)
+        { 
+        case 0:  TD=0;TU=1; Disp = seg[U]; break;  
+        case 1:  TD=0;TU=0; Disp = 0;      break;
+        case 2:  TD=1;TU=0; Disp = seg[D]; break;
+        case 3:  TD=0;TU=0; Disp = 0;      break;
+        default: TD=0;TU=0; Disp = 0;      break;
+        }
+        estado++; 
+        if (estado==4) estado = 0;
+        thread_sleep_for(tiempo_refresco);
+    }    
+}
+void cuenta(void)
+{
+    s = bt5;
+    if (s==false) 
+    {
+    while(true)
+    {
+        if (dip1 == true){
+            a = 1;
+        }else{
+            a = 0;
+        }
+        if (dip2 == true){
+            b = 2;
+        }else{
+            b = 0;
+        }
+        if (dip3 == true){
+            c = 4;
+        }else{
+            c = 0;
+        }
+        if (dip4 == true){
+            d = 8;
+        }else{
+            d = 0;
+        }
+        if (dip5 == true){
+            e = 16;
+        }else{
+            e = 0;
+        }
+        if (dip6 == true){
+            f = 32;
+        }else{
+            f = 0;
+        }
+        if (dip7 == true){
+            g = 64;
+        }else{
+            g = 0;
+        }
+
+        unidades = a + b + c + d + e + f + g;
+        if (unidades > 99) unidades = 99;
+
+        D = (unidades/10);
+        U = (unidades-(D*10));
+      
+       boton1 = bt1.read();
+       if (boton1 == false)
+       {
+            while(true)
+            {
+                U++;
+                if (U==10)
+                {
+                    U=0;
+                    D++;
+                    if (D==10)
+                    {
+                        while(true)
+                        {
+                            switch  (titi)
+                            { 
+                            case 0:  D=9;U=9; titi=1; pa++; break;
+                            default: D=11;U=11; titi=0; break;
+                            }
+                            if (pa == 6)
+                            {
+                                thread_sleep_for(tiempo);
+                            } 
+                            
+                            thread_sleep_for(tiempo_conteo);
+                        }
+                    }
+                }
+            thread_sleep_for(tiempo_conteo);
+            }
+       }
+       boton2 = bt2.read();
+       if (boton2 == false)
+       {
+            while(true)
+            {
+                if (U==0)
+                {
+                    U=10;
+                    if (D==0)
+                    {
+                        while(true)
+                        { 
+                            switch  (titi)
+                            { 
+                            case 0:  D=10;U=10; titi=1; pa++; break;
+                            default: D=11;U=11; titi=0; break;
+                            }
+                            if (pa == 6)
+                            {
+                                thread_sleep_for(tiempo);
+                            } 
+                            thread_sleep_for(tiempo_conteo);
+                        }
+                    }
+                    D--;
+                }
+                U--;
+            thread_sleep_for(tiempo_conteo);
+            }
+       }
+    }  
+    }
+}
+void apuesta(void)
+{
+    s = bt5.read();
+    if (s==true)
+    {
+    srand(time(NULL));
+    while(true)
+    {
+        boton3 = bt3.read();
+        if(boton3==false)
+        {
+            h = 0;
+            while(true)
+            {
+                U = (rand()%6)+1;
+                h++;
+                D = 11;
+                if (h == 10)
+                {
+                    while(true)
+                    {
+                        boton4 = bt4.read();
+                        if(boton4==false)
+                        {
+                            k = 0;
+                            while(true)
+                            {
+                                D = (rand()%6)+1;
+                                k++;
+                                if (k == 10)
+                                {
+                                    if (bt6 == true)
+                                    {
+                                        m = 1;
+                                    }else
+                                    {
+                                        m = 0;
+                                    }
+                                    if (m == 1)
+                                    {
+                                        if (D<U)
+                                        {
+                                            while(true)
+                                            {
+                                            led2=!led2;
+                                            ThisThread::sleep_for(100ms);
+                                            }
+                                        }
+                                        if (D>=U)
+                                        {
+                                            while(true)
+                                            {
+                                            led2=!led2;
+                                            ThisThread::sleep_for(3s);
+                                            }
+                                        }
+                                    }
+
+                                    if (m == 0)
+                                    {
+                                        if (D<U)
+                                        {
+                                            while(true)
+                                            {
+                                            led2=!led2;
+                                            ThisThread::sleep_for(3s);
+                                            }
+                                        }
+                                        if (D>=U)
+                                        {
+                                            while(true)
+                                            {
+                                            led2=!led2;
+                                            ThisThread::sleep_for(100ms);
+                                            }
+                                        }
+                                    }
+                                }
+                                ThisThread::sleep_for(125ms);
+                            }   
+                        }
+                    }
+                }
+                ThisThread::sleep_for(125ms);
+            }   
+        }
+    }
+    }
+}
